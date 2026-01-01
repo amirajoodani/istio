@@ -77,5 +77,51 @@ This process relies on a Kubernetes feature known as Mutating Admission Webhooks
 
 The webhook is triggered according to a simple convention, where the application of the label istio-injection=enabled to a Kubernetes namespace governs whether the webhook should modify any deployment or pod resource applied to that namespace to include the sidecar.<br>
 
+# Routing Application Traffic Through the Sidecar
+With the sidecar deployed, the next problem is ensuring that the proxy transparently captures the traffic. The outbound traffic should be diverted from its original destination to the proxy, and inbound traffic should arrive at the proxy before the application has a chance to handle the incoming request.
+
+This is performed by applying iptables rules . Routing Application Traffic Through the Sidecar
+With the sidecar deployed, the next problem is ensuring that the proxy transparently captures the traffic. The outbound traffic should be diverted from its original destination to the proxy, and inbound traffic should arrive at the proxy before the application has a chance to handle the incoming request.
+
+This is performed by applying iptables rules. The video by Matt Turner titled Life of a Packet through Istio explains elegantly how this process works.
+
+In addition to the Envoy sidecar, the sidecar injection process injects a Kubernetes init container. This init-container is a process that applies these iptables rules before the Pod containers are started.
+
+Today Istio provides two alternative mechanisms for configuring a Pod to allow Envoy to intercept requests. The first is the original iptables method, and the second uses a Kubernetes CNI plugin. <br>
+
+# Assigning Workloads an Identity
+The basis for a secure mesh is strong identity. We often associate the concept of identity with an end user. But services also bear identity. For example, when shopping on barnesandnoble.com, the server offers your browser a certificate that allows it to assert the server's identity.
+
+In Istio, each workload is assigned an X.509 cryptographic identity that adheres to the SPIFFE (Secure Production Identity Framework for Everyone) framework.
+
+Based on the SPIFFE framework, Istio encodes a SPIFFE ID into a service's certificate. The SPIFFE ID is a URL in the form spiffe://<trust domain>/<workload identifier>.
+
+In Istio, the trust domain value is typically drawn from the Kubernetes cluster's domain, while the workload identity is a combination of the service's namespace and service account fields.
+
+Inside each sidecar, an Istio agent bootstraps Envoy and the service identity by sending a certificate signing request (CSR) to Istio, and making the resulting signed certificate accessible to Envoy securely (via its xDS API).
+
+This course dedicates an entire chapter to Istio security.<br>
+
+# Configuring Envoy
+When an application makes a call to another service, that call is now intercepted by its sidecar. But how does Envoy know how to route that request? In the other direction, when a request arrives from another service at a sidecar, how does Envoy know whether that request should be allowed through?
+
+The job of configuring the proxies with all the information they need to handle both incoming and outgoing traffic falls to the Istio control plane.
+
+It is important to point out that only Envoy is in the path of live requests and responses between services; the Istio control plane is not.
+
+Let us explore a number of simple scenarios in order to better understand the kind of configuration that the sidecars require.
+
+Imagine a sidecar for an instance of service A intercepting an outgoing request to service B. Service B may be backed by a Kubernetes Deployment with, say, three replicas. Service A's sidecar must know about all three endpoints: their network address, whether they're healthy, optionally the desired load balancing strategy when calling service B, and optionally other network configuration parameters such as request timeouts, number of retries, outlier detection, and more.
+Imagine an operator specifying that all mesh traffic should be encrypted. The sidecar needs to be aware of this configuration in order to decide whether or not to upgrade the connection.
+Imagine a situation where we're doing A/B testing. We have two subsets of service B's endpoints, with a rule to send certain types of requests to one subset and the rest to the other. Those subsets and rules must be communicated to the Envoy sidecar in order for it to adhere to this policy.
+Imagine a service mesh with over a hundred microservices, and your job is to configure each sidecar manually. That proposition is untenable. This, in a nutshell, is the job that Istio performs. One could say that Istio automates the configuration of all sidecars in the mesh to do their job of routing traffic according to a defined network policy, security policy, routing policy, and so on.
+
+One point to appreciate is that the configuration of sidecars is not a one-time, static operation. It's a dynamic reconciliation process, because Kubernetes is a dynamic environment.
+
+Imagine a scenario where a deployment is auto-scaled from two to three replicas. Information about the newly-created service endpoint must be communicated to all the sidecars in the mesh, so that the new endpoint can join the pool of load balancing endpoints that can be reached from other services.
+
+This brings us to a final and important point about Envoy: Envoy has the ability to receive configuration updates via API and to reload its configuration "live", without requiring a restart. This API is known as Envoy's discovery API, often abbreviated xDS.
+
+Istio is then the control plane that continuously pushes configuration updates to sidecars each time the mix or number of services in the mesh changes, or each time we update policies that affect the mesh. <br>
 
 
