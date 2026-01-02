@@ -202,6 +202,7 @@ helm status istiod -n istio-system
 We can provide custom configuration settings to individual Helm charts at installation time. To review settings that can be updated, we can use the show values command like this:
 
 helm show values istio/istiod
+```bash
 #.Values.pilot for discovery and mesh wide config 
 
 ## Discovery Settings
@@ -230,8 +231,7 @@ pilot:
 
   cpu:
     targetAverageUtilization: 80
-...
-
+```
 Similarly, we can get the values of other Helm charts. To apply the configuration updates to individual chart installations, we would create a separate YAML file with the configuration value we want to update. Then, use the install command with the -f flag to install the individual chart with the provided configuration settings:
 
 helm install istiod istio/istiod -n istio-system -f my-config-values.yaml
