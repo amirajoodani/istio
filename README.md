@@ -248,31 +248,34 @@ Once all releases are deleted, make sure to delete the namespaces if not needed 
 # Download Istio
 Throughout this course, we will be using Istio 1.21.0. The first step to installing Istio is downloading the Istio CLI (istioctl), installation manifests, samples, and tools.
 
-The easiest way to install the latest version is to use the downloadIstio script:
+The easiest way to install the latest version is to use the downloadIstio script:<br>
 
 Open a terminal window and navigate to the folder where you want to download Istio
-Run the download script:
+Run the download script: < br>
+```bash
 $ curl -L ht‌tps://istio.io/downloadIstio | ISTIO_VERSION=1.21.0 sh -
+```
 The Istio release is downloaded and unpacked to the folder called istio-1.21.0.
 
-Note: If your organization requires FIPS-certified distributions of Istio, you can read more about them here.
+Note: If your organization requires FIPS-certified distributions of Istio, you can read more about them here.<br>
 
-To run the istioctl from any folder, we should include its fully-qualified path in the PATH environment variable, as shown here:
-
+To run the istioctl from any folder, we should include its fully-qualified path in the PATH environment variable, as shown here:<br>
+```bash
 cd istio-1.21.0
 export PATH=$PWD/bin:$PATH
-
-To check that the Istio CLI is on the path, run istioctl version. You should see output resembling this:
-
+```
+To check that the Istio CLI is on the path, run istioctl version. You should see output resembling this:<br>
+```bash
 istioctl version
 no running Istio pods in "istio-system"
 1.21.0
+```
 
 # Install Istio
 To install Istio, we have to create the IstioOperator resource and specify the configuration profile we want to use.
 
 Create a file called demo-profile.yaml with the following contents:
-
+```bash
 apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
 metadata:
@@ -280,34 +283,33 @@ metadata:
   name: demo-installation
 spec:
   profile: demo
+```
 
-Note: You can download the supporting YAML and other files from this GitHub repo.
-
-The last thing we need to do is to deploy the IstioOperator resource using the istioctl install command:
-
+The last thing we need to do is to deploy the IstioOperator resource using the istioctl install command:<br>
+```bash
 istioctl install -f demo-profile.yaml
-
-This will install the Istio 1.21.0 demo profile with ["Istio core" "Istiod" "Ingress gateways" "Egress gateways"] components into the cluster. Proceed? (y/N) y
-✔ Istio core installed
-✔ Istiod installed
-✔ Egress gateways installed
-✔ Ingress gateways installed
-✔ Installation complete
-Making this installation the default for injection and validation.
+```
+This will install the Istio 1.21.0 demo profile with ["Istio core" "Istiod" "Ingress gateways" "Egress gateways"] components into the cluster. Proceed? (y/N) y <br>
+✔ Istio core installed <br>
+✔ Istiod installed <br>
+✔ Egress gateways installed <br>
+✔ Ingress gateways installed <br>
+✔ Installation complete <br>
+Making this installation the default for injection and validation. <br>
 
 Another option we have to install Istio using any configuration profile is to use the istioctl install command with the --set flag, for example:
-
+```bash
 istioctl install --set profile=demo
+```
+In both cases, we will get prompted to proceed with the installation, and once we confirm, the Istio service mesh will be deployed.<br>
 
-In both cases, we will get prompted to proceed with the installation, and once we confirm, the Istio service mesh will be deployed.
-
-To check the deployed resource, we can look at the status of the pods in the istio-system namespace:
-
+To check the deployed resource, we can look at the status of the pods in the istio-system namespace:<br>
+```bash
 $ kubectl get po -n istio-system
 
 NAME                                   READY   STATUS    RESTARTS   AGE
 istio-egressgateway-6db9994577-sn95p   1/1     Running   0          79s
 istio-ingressgateway-58649bfdf4-cs4fk  1/1     Running   0          79s
 istiod-dd4b7db5-nxrjv                  1/1     Running   0          111s
-
+```
 
