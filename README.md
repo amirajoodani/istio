@@ -236,4 +236,78 @@ Similarly, we can get the values of other Helm charts. To apply the configuratio
 
 helm install istiod istio/istiod -n istio-system -f my-config-values.yaml
 
+# Using Helm: Uninstalling Istio
+Uninstalling Istio that was deployed using Helm involves listing all installed Istio charts using the helm ls command and then running the helm delete command.
+
+For example:
+
+helm delete istiod -n istio-system
+
+Once all releases are deleted, make sure to delete the namespaces if not needed anymore.
+
+# Download Istio
+Throughout this course, we will be using Istio 1.21.0. The first step to installing Istio is downloading the Istio CLI (istioctl), installation manifests, samples, and tools.
+
+The easiest way to install the latest version is to use the downloadIstio script:
+
+Open a terminal window and navigate to the folder where you want to download Istio
+Run the download script:
+$ curl -L ht‌tps://istio.io/downloadIstio | ISTIO_VERSION=1.21.0 sh -
+The Istio release is downloaded and unpacked to the folder called istio-1.21.0.
+
+Note: If your organization requires FIPS-certified distributions of Istio, you can read more about them here.
+
+To run the istioctl from any folder, we should include its fully-qualified path in the PATH environment variable, as shown here:
+
+cd istio-1.21.0
+export PATH=$PWD/bin:$PATH
+
+To check that the Istio CLI is on the path, run istioctl version. You should see output resembling this:
+
+istioctl version
+no running Istio pods in "istio-system"
+1.21.0
+
+# Install Istio
+To install Istio, we have to create the IstioOperator resource and specify the configuration profile we want to use.
+
+Create a file called demo-profile.yaml with the following contents:
+
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  namespace: istio-system
+  name: demo-installation
+spec:
+  profile: demo
+
+Note: You can download the supporting YAML and other files from this GitHub repo.
+
+The last thing we need to do is to deploy the IstioOperator resource using the istioctl install command:
+
+istioctl install -f demo-profile.yaml
+
+This will install the Istio 1.21.0 demo profile with ["Istio core" "Istiod" "Ingress gateways" "Egress gateways"] components into the cluster. Proceed? (y/N) y
+✔ Istio core installed
+✔ Istiod installed
+✔ Egress gateways installed
+✔ Ingress gateways installed
+✔ Installation complete
+Making this installation the default for injection and validation.
+
+Another option we have to install Istio using any configuration profile is to use the istioctl install command with the --set flag, for example:
+
+istioctl install --set profile=demo
+
+In both cases, we will get prompted to proceed with the installation, and once we confirm, the Istio service mesh will be deployed.
+
+To check the deployed resource, we can look at the status of the pods in the istio-system namespace:
+
+$ kubectl get po -n istio-system
+
+NAME                                   READY   STATUS    RESTARTS   AGE
+istio-egressgateway-6db9994577-sn95p   1/1     Running   0          79s
+istio-ingressgateway-58649bfdf4-cs4fk  1/1     Running   0          79s
+istiod-dd4b7db5-nxrjv                  1/1     Running   0          111s
+
 
