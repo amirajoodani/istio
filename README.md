@@ -124,4 +124,20 @@ This brings us to a final and important point about Envoy: Envoy has the ability
 
 Istio is then the control plane that continuously pushes configuration updates to sidecars each time the mix or number of services in the mesh changes, or each time we update policies that affect the mesh. <br>
 
+# Envoy at the Edge
+No service mesh is an island.
+
+Envoy, after all, is a proxy, and Istio leverages Envoy not only for proxying requests within the mesh, but also as the mechanism for handling ingress and egress traffic (i.e., traffic coming from a source outside the mesh, or traffic bound to a destination outside the mesh).
+
+Indeed, there exist today multiple open-source and commercial implementations of Kubernetes Ingress controllers built on Envoy. Contour and Emissary-ingress are two examples.
+
+Aside:  The Envoy project announced the Envoy Gateway project, a collaborative effort to develop an open source solution for Ingress based on Envoy. 
+
+Two additional important components of the Istio architecture are Istio's Ingress Gateway and its Egress Gateway. Both are based on Envoy. They support the original Kubernetes Ingress CRD. However, Istio provides its own Gateway Custom Resource Definition (CRD) for configuring ingress and egress more flexibly.
+
+We delve into these topics in more detail in the chapter on traffic management.
+
+The illustration below captures all of the Istio components, including the edge gateways.<br>
+<img width="1254" height="610" alt="2" src="https://github.com/user-attachments/assets/389c11a0-ec0b-4aa9-ab26-1a8eb3672c1a" /> <br>
+
 
