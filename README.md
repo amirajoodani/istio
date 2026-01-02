@@ -140,4 +140,100 @@ We delve into these topics in more detail in the chapter on traffic management.
 The illustration below captures all of the Istio components, including the edge gateways.<br>
 <img width="1254" height="610" alt="2" src="https://github.com/user-attachments/assets/389c11a0-ec0b-4aa9-ab26-1a8eb3672c1a" /> <br>
 
+# istio Installation
+Installation Configuration Profiles
+Istio service mesh has numerous configuration settings that operators can update before installing Istio. To group the most common configuration settings into a higher-level abstraction, Istio uses the concept of configuration profiles.
+
+The configuration profiles contain different configuration settings for the control plane as well as the data plane of Istio. The installation configuration profiles are expressed through the Istio Operator API and the IstioOperator resource.
+
+Six configuration profiles are currently available, as shown in the list below. To get an up-to-date list of Istio configuration profiles, run the istioctl profile list command. <br>
+<b>Default profile</b> : The default profile is meant for production deployments and deployments of primary clusters in multi-cluster scenarios. It deploys the control plane and ingress gateway.<br>
+<b>Demo profile</b> : The demo profile is intended for demonstration deployments. It deploys the control plane and ingress and egress gateways and has a high level of tracing and access logging enabled.<br>
+<b>Minimal profile</b> : The minimal profile is equivalent to the default profile but without the ingress gateway. It deploys the control plane.<br>
+<b>External profile </b>: The external profile is used for configuring remote clusters in a multi-cluster scenario. It does not deploy any components.<br>
+<b>Empty profile </b>: The empty profile is used as a base for custom configuration. It does not deploy any components.</br>
+<b>Preview profile </b>: The preview profile contains experimental features. It deploys the control plane and ingress gateway.</br>
+<b>Ambient profile </b>: The ambient profile is designed to help you get started with ambient mesh. Ambient mode is currently in the Alpha phase (as of April 2024). Please do not use ambient mode in production yet.</b>
+To install Istio using the Istio CLI, we can use the --set flag and specify the profile like this:
+
+istioctl install --set profile=demo
+
+Later, we will cover how to install and customize Istio by creating an IstioOperator resource and installing it using the Istio CLI. We will also cover how to use Helm and deploy the Istio Helm charts.</br>
+
+# Using Istio Operator API
+The Istio Operator API and the IstioOperator resource allow us to install and configure Istio on a Kubernetes cluster. At a high level, we can separate the configuration in the IstioOperator resource into the following sections:
+
+Global
+The global section allows us to configure the profile name, root Docker image path, image tags, namespace, revision, and so on.
+Mesh configuration (meshConfig)
+The meshConfig section includes the configuration of the control plane components. For example, in this section, we can configure access log format, log encoding, set up default proxy configuration, discovery selectors, trust domains, and more.
+Component configuration (components)
+The components section allows us to enable or disable individual components, install additional components (multiple ingress or egress gateways, for example), and configure Kubernetes resource settings for individual components. For example, for each component (e.g., pilot, ingress, or egress gateways), we can configure the CPU and memory requests and limits, annotations, labels, replica counts, and other settings in the Kubernetes resources.
+Within the IstioOperator resource, we specify the desired state of Istio components. We can apply or deploy the resource to the Kubernetes cluster using the Istio CLI and the Code in a paragraph or file content: install command.
+
+Once we have created the IstioOperator resource, we can install it on the cluster using the install command:
+
+istioctl install -f my-operator-resource.yaml
+
+# Using Helm
+Helm is a Kubernetes package manager that helps install and upgrade complex applications on Kubernetes. A fundamental building block of Helm is a Helm Chart, a collection of YAML manifests.
+
+When using Helm, there are three different Helm charts we need to be aware of, listed in the order we would install them:
+
+Base chart (istio/base)
+The base chart includes cluster-wide resources such as the validating webhook configuration resource, service accounts, cluster roles and bindings, and other resources to ensure backward compatibility.
+Istiod chart (istio/istiod)
+The istiod chart contains Istio’s control plane installation. It includes the istiod deployment and service, mutating webhook configuration (facilitates automatic sidecar injection into deployments), and other resources for the control plane.
+Gateway chart (istio/gateway)
+The gateway chart is used for deploying ingress and egress gateways to the cluster. It includes the service and deployment resources and other supporting resources.
+Before installing the charts, we need to manually create the root namespace (i.e., istio-system) and use the helm install command to install the individual charts. Typically, we install the base and istiod charts to the istio-system namespace and gateway charts into separate namespaces.
+
+Here is how we could install the istiod chart, for example:
+
+helm install istiod istio/istiod -n istio-system
+
+The first parameter in the above command is the release name, followed by the chart name.
+
+To check on the installation progress, we can pass the release name (e.g. istiod) to the status command:
+
+helm status istiod -n istio-system
+
+# Using Helm: Updating the Configuration
+We can provide custom configuration settings to individual Helm charts at installation time. To review settings that can be updated, we can use the show values command like this:
+
+helm show values istio/istiod
+#.Values.pilot for discovery and mesh wide config 
+
+## Discovery Settings
+pilot:
+  autoscaleEnabled: true
+  autoscaleMin: 1
+  autoscaleMax: 5
+  replicaCount: 1
+  rollingMaxSurge: 100%
+  rollingMaxUnavailable: 25% 
+
+  hub: "" 
+  tag: "" 
+
+  # Can be a full hub/image:tag
+  image: pilot
+  traceSampling: 1.0 
+
+  # Resources for a small pilot install
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2048Mi 
+
+  env: {} 
+
+  cpu:
+    targetAverageUtilization: 80
+...
+
+Similarly, we can get the values of other Helm charts. To apply the configuration updates to individual chart installations, we would create a separate YAML file with the configuration value we want to update. Then, use the install command with the -f flag to install the individual chart with the provided configuration settings:
+
+helm install istiod istio/istiod -n istio-system -f my-config-values.yaml
+
 
